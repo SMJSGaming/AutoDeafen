@@ -4,6 +4,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/ui/GeodeUI.hpp>
@@ -17,7 +18,7 @@ struct AutoDeafenLevel {
 	bool editor = false;
 	int id = 0;
 	float percentage = 50;
-	AutoDeafenLevel(bool a, bool b, int c, float d) {
+	AutoDeafenLevel(bool a, bool b, int c, float d) { // I am lazy lmao
 		enabled = a;
 		editor = b;
 		id = c;
@@ -31,6 +32,7 @@ AutoDeafenLevel currentlyLoadedLevel;
 list<AutoDeafenLevel> loadedAutoDeafenLevels;
 
 bool hasDeafenedThisAttempt = false;
+uint32_t deafenKeybind[] = {0xA1, 0x76};
 
 ghc::filesystem::path getFilePath(GJGameLevel* lvl) {
 
@@ -73,6 +75,24 @@ void saveFile() {
 
 }
 
+void playDeafenKeybind() {
+
+	log::info("Played deafen keybind.");
+
+	// TODO - make this configurable
+
+	keybd_event(deafenKeybind[0], 0, 0x0000, 0);
+
+	keybd_event(deafenKeybind[1], 0, 0x0000, 0);
+	keybd_event(deafenKeybind[1], 0, 0x0002, 0);
+
+
+	keybd_event(deafenKeybind[0], 0, 0x0002, 0);
+
+
+
+}
+
 
 void loadFromFile(GJGameLevel* lvl) {
 
@@ -85,40 +105,55 @@ void loadFromFile(GJGameLevel* lvl) {
 }
 
 
+class $modify(PlayerObject) {
+	TodoReturn playerDestroyed(bool p0) {
+		PlayerObject::playerDestroyed(p0);
+		if (hasDeafenedThisAttempt) {
+			hasDeafenedThisAttempt = false;
+			playDeafenKeybind();
+		}
+	}
+};
 
 class $modify(PlayLayer) {
+
+	bool init(GJGameLevel* level, bool p1, bool p2) {
+
+		if (!PlayLayer::init(level, p1, p2)) return false;
+
+		int id = m_level -> m_levelID.value();
+		bool editor = (id == 0);
+		if (editor) id = m_level -> m_M_ID;
+		for (AutoDeafenLevel level : loadedAutoDeafenLevels)
+			if (level.id == id && level.editor == editor) { currentlyLoadedLevel = level; return true; }
+
+		currentlyLoadedLevel = AutoDeafenLevel(false, editor, id, 50);
+		hasDeafenedThisAttempt = false;
+
+		return true;
+
+	}
 	
 	void updateProgressbar() {
 
 		PlayLayer::updateProgressbar();
 
 		float percent = static_cast<float>(PlayLayer::getCurrentPercentInt());
-		if (percent > currentlyLoadedLevel.percentage && percent != 100) {
-			
-		} else if (percent == 100) {
-
+		// log::info("{}", currentlyLoadedLevel.percentage);
+		// log::info("{}", percent);
+		if (percent >= currentlyLoadedLevel.percentage && percent != 100 && !hasDeafenedThisAttempt) {
+			hasDeafenedThisAttempt = true;
+			playDeafenKeybind();
 		}
 
 	}
 
-	void startGame() {
-
-		PlayLayer::startGame();
-
-		int id = m_level -> m_levelID.value();
-		bool editor = (id == 0);
-		if (editor) id = m_level -> m_M_ID;
-		for (AutoDeafenLevel level : loadedAutoDeafenLevels)
-			if (level.id == id && level.editor == editor) { currentlyLoadedLevel = level; return; }
-
-		currentlyLoadedLevel = AutoDeafenLevel(false, editor, id, 50);
-
-	}
-
-	void onQuit() {
-
-		
-
+	void levelComplete() {
+		PlayLayer::levelComplete();
+		if (hasDeafenedThisAttempt) {
+			hasDeafenedThisAttempt = false;
+			playDeafenKeybind();
+		}
 	}
 	
 };

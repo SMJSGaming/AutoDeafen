@@ -1,5 +1,5 @@
 # AutoDeafen
 
-Automatically hits your deafen keybind (Alt + L by default) when you reach a certain percentage in a level, then undeafens when you win/die.
+Automatically hits a configurable deafen keybind (Right-Shift + F7 by default) when you reach a certain percentage in a level, then undeafens when you win/die.
 
 Configurable per-level in the escape menu.
