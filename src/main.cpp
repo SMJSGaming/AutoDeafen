@@ -2,13 +2,15 @@
 #include <fstream>
 
 #include <Geode/Geode.hpp>
-#include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/GeodeUI.hpp>
 #include "../build/bindings/bindings/Geode/binding/GJGameLevel.hpp"
+
+#include <cocos2d.h>
 
 using namespace geode::prelude;
 using namespace std;
@@ -32,7 +34,8 @@ AutoDeafenLevel currentlyLoadedLevel;
 list<AutoDeafenLevel> loadedAutoDeafenLevels;
 
 bool hasDeafenedThisAttempt = false;
-uint32_t deafenKeybind[] = {0xA1, 0x76};
+bool hasDied = false;
+uint32_t deafenKeybind[] = {0xA1, 0x48};
 
 ghc::filesystem::path getFilePath(GJGameLevel* lvl) {
 
@@ -77,17 +80,19 @@ void saveFile() {
 
 void playDeafenKeybind() {
 
-	log::info("Played deafen keybind.");
+	if (currentlyLoadedLevel.enabled) {
+		log::info("Played deafen keybind.");
 
-	// TODO - make this configurable
+		// TODO - make this configurable
 
-	keybd_event(deafenKeybind[0], 0, 0x0000, 0);
+		keybd_event(deafenKeybind[0], 0, 0x0000, 0);
 
-	keybd_event(deafenKeybind[1], 0, 0x0000, 0);
-	keybd_event(deafenKeybind[1], 0, 0x0002, 0);
+		keybd_event(deafenKeybind[1], 0, 0x0000, 0);
+		keybd_event(deafenKeybind[1], 0, 0x0002, 0);
 
 
-	keybd_event(deafenKeybind[0], 0, 0x0002, 0);
+		keybd_event(deafenKeybind[0], 0, 0x0002, 0);
+	}
 
 
 
@@ -107,11 +112,18 @@ void loadFromFile(GJGameLevel* lvl) {
 
 class $modify(PlayerObject) {
 	TodoReturn playerDestroyed(bool p0) {
-		PlayerObject::playerDestroyed(p0);
-		if (hasDeafenedThisAttempt) {
-			hasDeafenedThisAttempt = false;
+		
+		auto playLayer = PlayLayer::get();
+
+		if (this != (playLayer->m_player1) ) return;
+		if (playLayer == nullptr) return;
+		if (playLayer->m_isPracticeMode) return;
+
+		if (hasDeafenedThisAttempt && !hasDied) {
+			hasDied = true;
 			playDeafenKeybind();
 		}
+		PlayerObject::playerDestroyed(p0);
 	}
 };
 
@@ -133,10 +145,17 @@ class $modify(PlayLayer) {
 		return true;
 
 	}
+
+	void resetLevel() {
+		PlayLayer::resetLevel();
+		hasDied = false;
+		hasDeafenedThisAttempt = false;
+	}
 	
 	void updateProgressbar() {
 
 		PlayLayer::updateProgressbar();
+		if (this->m_isPracticeMode) return;
 
 		float percent = static_cast<float>(PlayLayer::getCurrentPercentInt());
 		// log::info("{}", currentlyLoadedLevel.percentage);
@@ -155,10 +174,85 @@ class $modify(PlayLayer) {
 			playDeafenKeybind();
 		}
 	}
+
+	void onQuit() {
+		PlayLayer::onQuit();
+		saveLevel(currentlyLoadedLevel);
+		currentlyLoadedLevel = AutoDeafenLevel();
+	}
 	
 };
 
-class $modify(MyPauseMenuLayer, PauseLayer) {
+CCMenuItemToggler* enabledButton;
+class ButtonLayer : public CCLayer {
+	public:
+		void toggleEnabled(CCObject* sender) {
+			currentlyLoadedLevel.enabled = !currentlyLoadedLevel.enabled;
+			enabledButton -> toggle(!currentlyLoadedLevel.enabled);
+			// log::info("{}", currentlyLoadedLevel.enabled);
+		}
+};
+
+class ConfigLayer : public geode::Popup<std::string const&> {
+	protected:
+		bool setup(std::string const& value) override {
+
+			auto winSize = cocos2d::CCDirector::sharedDirector()->getWinSize();
+			auto menu = CCMenu::create();
+
+			CCPoint topLeftCorner = winSize/2.f-ccp(m_size.width/2.f,-m_size.height/2.f);
+
+			menu -> setPosition( {0, 0} );
+
+			m_mainLayer -> addChild(menu);
+
+			auto topLabel = CCLabelBMFont::create("AutoDeafen", "bigFont.fnt"); 
+			topLabel->setAnchorPoint({0.5, 0.5});
+			topLabel->setScale(1.0f);
+			topLabel->setPosition(topLeftCorner + ccp(142, 5));
+
+			auto enabledLabel = CCLabelBMFont::create("Enabled", "bigFont.fnt"); 
+			enabledLabel->setAnchorPoint({0, 0.5});
+			enabledLabel->setScale(0.7f);
+			enabledLabel->setPosition(topLeftCorner + ccp(80, -60));
+
+			enabledButton = CCMenuItemToggler::create(
+				CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png"),
+				CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png"),
+				this,
+				menu_selector(ButtonLayer::toggleEnabled)
+			);
+
+			enabledButton -> setPosition(enabledLabel->getPosition() + ccp(120,0));
+			enabledButton -> setScale(0.85f);
+			enabledButton -> setClickable(true);
+			enabledButton -> toggle(currentlyLoadedLevel.enabled);
+
+
+			menu -> addChild(topLabel);
+			menu -> addChild(enabledLabel);
+			menu -> addChild(enabledButton);
+
+			return true;
+		}
+		static ConfigLayer* create() {
+			auto ret = new ConfigLayer();
+			if (ret && ret->init(300, 200, "", "GJ_square02.png")) {
+				ret->autorelease();
+				return ret;
+			}
+			CC_SAFE_DELETE(ret);
+			return nullptr;
+		}
+	public:
+		void openMenu(CCObject*) {
+			auto layer = create();
+			layer -> show();
+		}
+};
+
+
+class $modify(PauseLayer) {
 
 	void customSetup() {
 		PauseLayer::customSetup();
@@ -166,8 +260,11 @@ class $modify(MyPauseMenuLayer, PauseLayer) {
 
 		CCSprite* sprite = CCSprite::createWithSpriteFrameName("GJ_musicOffBtn_001.png");
 
-		auto btn = CCMenuItemSpriteExtra::create(sprite, this, nullptr);
+		auto btn = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(ConfigLayer::openMenu) );
 		auto menu = this -> getChildByID("right-button-menu");
+
+		menu->addChild(btn);
+		menu->updateLayout();
 
 		
 	}
