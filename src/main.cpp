@@ -552,8 +552,8 @@ class $modify(PauseLayer) {
 
 	void keyDown(cocos2d::enumKeyCodes p0) {   if (!currentlyInMenu) PauseLayer::keyDown(p0);   }
 	void onResume(CCObject* sender)        {   if (!currentlyInMenu) PauseLayer::onResume(sender);   }
-	void onRestart(CCObject* sender)       {   if (!currentlyInMenu) PauseLayer::onRestart(sender);   }
-	void onRestartFull(CCObject* sender)   {   if (!currentlyInMenu) PauseLayer::onRestartFull(sender);   }
+	void onRestart(CCObject* sender)       {   if (!currentlyInMenu) PauseLayer::onRestart(sender);     if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
+	void onRestartFull(CCObject* sender)   {   if (!currentlyInMenu) PauseLayer::onRestartFull(sender); if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
 	void onQuit(CCObject* sender)          {   if (!currentlyInMenu) PauseLayer::onQuit(sender);   }
 	void onPracticeMode(CCObject* sender)  {   if (!currentlyInMenu) PauseLayer::onPracticeMode(sender);   }
 	void onSettings(CCObject* sender)      {   if (!currentlyInMenu) PauseLayer::onSettings(sender);   }
