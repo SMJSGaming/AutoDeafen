@@ -252,9 +252,9 @@ class $modify(PlayLayer) {
 		hasDeafenedThisAttempt = false;
 	}
 	
-	void updateProgressbar() {
+	void postUpdate(float p0) {
 
-		PlayLayer::updateProgressbar();
+		PlayLayer::postUpdate(p0);
 		if (this->m_isPracticeMode) return;
 
 		int percent = PlayLayer::getCurrentPercentInt();
@@ -554,7 +554,7 @@ class $modify(PauseLayer) {
 	void onResume(CCObject* sender)        {   if (!currentlyInMenu) PauseLayer::onResume(sender);   }
 	void onRestart(CCObject* sender)       {   if (!currentlyInMenu) PauseLayer::onRestart(sender);     if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
 	void onRestartFull(CCObject* sender)   {   if (!currentlyInMenu) PauseLayer::onRestartFull(sender); if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
-	void onQuit(CCObject* sender)          {   if (!currentlyInMenu) PauseLayer::onQuit(sender);   }
+	void onQuit(CCObject* sender)          {   if (!currentlyInMenu) PauseLayer::onQuit(sender);        if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
 	void onPracticeMode(CCObject* sender)  {   if (!currentlyInMenu) PauseLayer::onPracticeMode(sender);   }
 	void onSettings(CCObject* sender)      {   if (!currentlyInMenu) PauseLayer::onSettings(sender);   }
 

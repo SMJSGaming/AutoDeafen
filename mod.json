@@ -5,6 +5,7 @@
   "geode": "2.0.0",
   "id": "lynxdeer.autodeafen",
   "name": "AutoDeafen",
-  "version": "v1.0.0",
+  "version": "v1.0.1",
+  "tags": ["Enhancement", "Utility"],
   "early-load": true
 }
