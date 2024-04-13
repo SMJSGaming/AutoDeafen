@@ -380,8 +380,9 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			strcpy(strarray, str.c_str());
 
 			for (uint32_t key : keys) {
-				if (key > 0x404) {
-					secondaryLabel->setString("Unsupported key in keybind!");
+				if (key > 0x11E) { // Also doesn't support controller (because discord doesn't either)
+					log::info("Unsupported key {}", key);
+					secondaryLabel->setString("Geode-Unsupported key in keybind!");
 					confirmationLabel->setString("Change your keybind and try again!");
 					return;
 				}
@@ -541,7 +542,7 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 				percentageLabel->setScale(0.7f);
 				percentageLabel->setPosition(topLeftCorner + ccp(60, -100));
 			} else {
-				keybindLabel = CCLabelBMFont::create("To use the mod, press the\n[Edit Keybind] button, then press\nyour Discord Toggle Deafen Keybind \nset in Discord Settings > Keybinds", "bigFont.fnt"); 
+				keybindLabel = CCLabelBMFont::create("To use the mod, press the\nEdit Keybind button, then press\nyour Discord Toggle Deafen Keybind\nset in Discord Settings > Keybinds", "bigFont.fnt");
 				// Can't figure out colors :(
 				// keybindLabel = CCLabelBMFont::create("To use the mod, press the \n<cg>Edit Keybind</c> button\nand press your \ndiscord <co>Toggle Deafen</c> keybind \nset in \n<cb>Discord Settings</c> > <cp>Keybinds</c>", "chatFont-uhd.fnt"); 
 				keybindLabel->setAnchorPoint({0.5, 0});
