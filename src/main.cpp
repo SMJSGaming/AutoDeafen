@@ -16,7 +16,7 @@
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/LoadingLayer.hpp>
-#include <Geode/modify/GManager.hpp>
+#include <Geode/modify/GameManager.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/GeodeUI.hpp>
@@ -42,7 +42,6 @@ struct AutoDeafenLevel {
 	AutoDeafenLevel() {}
 };
 
-
 AutoDeafenLevel currentlyLoadedLevel;
 vector<AutoDeafenLevel> loadedAutoDeafenLevels;
 
@@ -51,13 +50,11 @@ bool hasDied = false;
 vector<uint32_t> deafenKeybind = {};
 
 short getLevelType(GJGameLevel* level) {
-
 	if (level -> m_levelType != GJLevelType::Saved) return 1;
 	if (level -> m_dailyID > 0) return 2;
 	if (level -> m_gauntletLevel) return 3;
 
 	return 0;
-
 }
 
 void runEmptyDebugs() {
@@ -71,7 +68,6 @@ void runEmptyDebugs() {
 }
 
 void saveFile() {
-
 	auto path = Mod::get() -> getSaveDir();
 	path /= ".autodeafen";
 
@@ -80,8 +76,6 @@ void saveFile() {
 	ofstream file(path);
 	if (file.is_open()) {
 		file.write("ad1", sizeof("ad1")); // File Header - autodeafen file version 1
-
-
 
 		int size = deafenKeybind.size();
 
@@ -110,7 +104,6 @@ void saveFile() {
 	} else {
 		log::error("AutoDeafen file failed when trying to open and save.");
 	}
-
 }
 
 void loadFile() {
@@ -157,7 +150,6 @@ void loadFile() {
 
 
 void saveLevel(AutoDeafenLevel lvl) {
-
 	log::info("Saving level {}", lvl.id);
 
 	// Used to be an issue where this wouldn't work. The solution was making it a pointer.
@@ -179,7 +171,6 @@ void saveLevel(AutoDeafenLevel lvl) {
 		loadedAutoDeafenLevels.push_back(lvl);
 	if (Mod::get()->getSettingValue<bool>("Logging")) { runEmptyDebugs(); }
 	// Level saving is now done on exit because it's much faster. Might also make a feature where it starts removing really old levels past a certain limit (like 1000 or something)
-
 }
 
 void sendKeyEvent(uint32_t key, int state) {
@@ -194,7 +185,6 @@ void sendKeyEvent(uint32_t key, int state) {
 }
 
 void triggerDeafenKeybind() {
-
 	if (currentlyLoadedLevel.enabled) {
 		log::info("Triggered deafen keybind.");
 
@@ -216,9 +206,6 @@ void triggerDeafenKeybind() {
 		}
 
 	}
-
-
-
 }
 
 
@@ -233,38 +220,35 @@ class $modify(LoadingLayer) {
 class $modify(PlayerObject) {
 	void playerDestroyed(bool p0) {
 		if (this != nullptr) {
-			auto playLayer = PlayLayer::get();
-			if (playLayer != nullptr) {
-				auto level = playLayer->m_level;
-				if (level != nullptr) {
-					
-					if (	playLayer->m_player1 != nullptr &&
-							this == (playLayer->m_player1) &&
-							!(level->isPlatformer()) &&
-							!(playLayer->m_isPracticeMode)) {
-
+		if (auto playLayer = PlayLayer::get()) {
+			if (auto level = playLayer->m_level) {
+				if (playLayer->m_player1 != nullptr &&
+						this == (playLayer->m_player1) &&
+						!(level->isPlatformer()) &&
+						!(playLayer->m_isPracticeMode)
+					) {
 						if (hasDeafenedThisAttempt && !hasDied) {
 							hasDied = true;
 							triggerDeafenKeybind();
-						}}}}}
+						}
+					}
+				}
+			}
+		}
 		PlayerObject::playerDestroyed(p0);
 	}
 };
 
-class $modify(GManager) {
-	
-	TodoReturn saveGMTo(gd::string p0) {
+class $modify(GameManager) {
+	void encodeDataTo(DS_Dictionary* p0) {
 		saveFile();
-		return GManager::saveGMTo(p0);
+		GameManager::encodeDataTo(p0);
 	}
-
 };
 
 class $modify(PlayLayer) {
-
 	bool init(GJGameLevel* level, bool p1, bool p2) {
-
-		if (!PlayLayer::init(level, p1, p2)) return false;
+		if (!PlayLayer::init(level, p1, p2)) { return false; }
 
 		int id = m_level -> m_levelID.value();
 		short levelType = getLevelType(level);
@@ -276,7 +260,6 @@ class $modify(PlayLayer) {
 		hasDeafenedThisAttempt = false;
 
 		return true;
-
 	}
 
 	void resetLevel() {
@@ -286,9 +269,8 @@ class $modify(PlayLayer) {
 	}
 	
 	void postUpdate(float p0) {
-
 		PlayLayer::postUpdate(p0);
-		if (this->m_isPracticeMode) return;
+		if (this->m_isPracticeMode) { return; }
 
 		int percent = PlayLayer::getCurrentPercentInt();
 		// log::info("{}", currentlyLoadedLevel.percentage);
@@ -297,7 +279,6 @@ class $modify(PlayLayer) {
 			hasDeafenedThisAttempt = true;
 			triggerDeafenKeybind();
 		}
-
 	}
 
 	void levelComplete() {
@@ -317,19 +298,17 @@ class $modify(PlayLayer) {
 			triggerDeafenKeybind();
 		}
 	}
-	
 };
-
-
 
 // Shamelessly copied from https://gist.github.com/radj307/201e82048751713eb522386b46d94955
 std::wstring KeyNameFromScanCode(const unsigned scanCode) {
-    wchar_t buf[32]{};
-    GetKeyNameTextW(scanCode << 16, buf, sizeof(buf));
-    return{ buf };
+	wchar_t buf[32]{};
+	GetKeyNameTextW(scanCode << 16, buf, sizeof(buf));
+	return{ buf };
 }
+
 std::wstring KeyNameFromVirtualKeyCode(const unsigned virtualKeyCode){
-    return KeyNameFromScanCode(MapVirtualKeyW(virtualKeyCode, MAPVK_VK_TO_VSC));
+	return KeyNameFromScanCode(MapVirtualKeyW(virtualKeyCode, MAPVK_VK_TO_VSC));
 }
 
 // Shamelessly copied from chatgpt (i am lazy)
@@ -359,8 +338,6 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 					keys.push_back(160 + i);
 			keys.push_back(key);
 
-
-
 			std::string str = "";
 			std::string keycodes = "";
 
@@ -370,8 +347,6 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			}
 			str.pop_back();str.pop_back();str.pop_back();
 			keycodes.pop_back();keycodes.pop_back();
-
-			
 
 			// log::debug("{}{}{}{}", "Keys: ", str, " ||  Keycodes: ", keycodes );
 
@@ -393,6 +368,7 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			alreadyUsed = true;
 
 		}
+		
 		bool setup(std::string const& value) override {
 			this -> setKeyboardEnabled(true);
 			currentlyInMenu = true;
@@ -458,9 +434,6 @@ class ButtonLayer : public CCLayer {
 		};
 };
 
-
-
-
 TextInput* percentageInput;
 class ConfigLayer : public geode::Popup<std::string const&> {
 	public:
@@ -486,7 +459,6 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 		// }
 	protected:
 		bool setup(std::string const& value) override {
-
 			this->setKeyboardEnabled(true);
 			currentlyInMenu = true;
 
@@ -523,8 +495,6 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 				enabledButton -> setScale(0.85f);
 				enabledButton -> setClickable(true);
 				enabledButton -> toggle(currentlyLoadedLevel.enabled);
-
-
 
 				percentageInput = TextInput::create(100.f, "%");
 
@@ -565,18 +535,14 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 			// debugButton->setAnchorPoint({0.5, 0.5});
 			// debugButton->setPosition(topLeftCorner + ccp(142, -175));
 
-
-
 			auto menu = CCMenu::create();
 			menu -> setPosition( {0, 0} );
-
 			
 			if (keybindSet) {
 				menu -> addChild(enabledButton);
 				menu -> addChild(percentageInput);
-			} else {
-
 			}
+			
 			menu -> addChild(editKeybindButton);
 			// menu -> addChild(debugButton);
 			m_mainLayer -> addChild(topLabel);
@@ -591,12 +557,14 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 
 			return true;
 		}
+		
 		void onClose(CCObject* a) override {
 			Popup::onClose(a);
 			if (percentageInput != nullptr)
 				currentlyLoadedLevel.percentage = stoi(percentageInput -> getString());
 			currentlyInMenu = false;
 		}
+		
 		static ConfigLayer* create() {
 			auto ret = new ConfigLayer();
 			if (ret && ret->init(300, 200, "", "GJ_square02.png")) {
@@ -613,9 +581,7 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 		}
 };
 
-
 class $modify(PauseLayer) {
-
 	void customSetup() {
 		PauseLayer::customSetup();
 		auto winSize = CCDirector::sharedDirector() -> getWinSize();
@@ -629,13 +595,28 @@ class $modify(PauseLayer) {
 		menu->updateLayout();
 	}
 
-	void keyDown(cocos2d::enumKeyCodes p0) {   if (!currentlyInMenu) PauseLayer::keyDown(p0);   }
-	void onResume(CCObject* sender)        {   if (!currentlyInMenu) PauseLayer::onResume(sender);   }
-	void onRestart(CCObject* sender)       {   if (!currentlyInMenu) PauseLayer::onRestart(sender);     if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
-	void onRestartFull(CCObject* sender)   {   if (!currentlyInMenu) PauseLayer::onRestartFull(sender); if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
-	void onQuit(CCObject* sender)          {   if (!currentlyInMenu) PauseLayer::onQuit(sender);        if (hasDeafenedThisAttempt) triggerDeafenKeybind(); }
-	void onPracticeMode(CCObject* sender)  {   if (!currentlyInMenu) PauseLayer::onPracticeMode(sender);   }
-	void onSettings(CCObject* sender)      {   if (!currentlyInMenu) PauseLayer::onSettings(sender);   }
-
-
+	void keyDown(cocos2d::enumKeyCodes p0) {
+		if (!currentlyInMenu) { PauseLayer::keyDown(p0); }
+	}
+	void onResume(CCObject* sender) {
+		if (!currentlyInMenu) { PauseLayer::onResume(sender); }
+	}
+	void onRestart(CCObject* sender) {
+		if (!currentlyInMenu) { PauseLayer::onRestart(sender); }
+		if (hasDeafenedThisAttempt) { triggerDeafenKeybind(); }
+	}
+	void onRestartFull(CCObject* sender) {
+		if (!currentlyInMenu) { PauseLayer::onRestartFull(sender); }
+		if (hasDeafenedThisAttempt) { triggerDeafenKeybind(); }
+	}
+	void onQuit(CCObject* sender) {
+		if (!currentlyInMenu) { PauseLayer::onQuit(sender); }
+		if (hasDeafenedThisAttempt) { triggerDeafenKeybind(); }
+	}
+	void onPracticeMode(CCObject* sender) {
+		if (!currentlyInMenu) { PauseLayer::onPracticeMode(sender); }
+	}
+	void onSettings(CCObject* sender) {
+		if (!currentlyInMenu) { PauseLayer::onSettings(sender); }
+	}
 };
