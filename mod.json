@@ -1,8 +1,10 @@
 {
   "geode": "2.0.0-beta.23",
-  "gd": "2.204",
+  "gd": {
+    "win": "2.204"
+  },
   "name": "AutoDeafen",
-  "version": "v1.0.2",
+  "version": "v1.0.3",
   "developer": "Lynxdeer",
   "id": "lynxdeer.autodeafen",
   "description": "A mod that automatically hits a configurable deafen keybind when you reach a certain percentage. Configurable per-level.",
