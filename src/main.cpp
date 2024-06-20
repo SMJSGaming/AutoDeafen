@@ -16,7 +16,7 @@
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/LoadingLayer.hpp>
-#include <Geode/modify/GameManager.hpp>
+#include <Geode/modify/GManager.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/GeodeUI.hpp>
@@ -71,7 +71,7 @@ void saveFile() {
 	auto path = Mod::get() -> getSaveDir();
 	path /= ".autodeafen";
 
-	// log::info("{}", "Saving .autodeafen file to " + path.string());
+	log::info("{}", "Saving .autodeafen file to " + path.string());
 
 	ofstream file(path);
 	if (file.is_open()) {
@@ -93,10 +93,20 @@ void saveFile() {
 
 		for (AutoDeafenLevel const& a : loadedAutoDeafenLevels) {
 
+			if (a.percentage > 100 || a.percentage < 0 || a.levelType > 3 || a.levelType < 0 || a.id < 0) {
+				log::warn("{}{}{}{}{}" "Deleted corrupted autodeafen save entry ", a.id, " with percentage ", a.percentage, " and levelType ", a.levelType);
+				continue; // To "uncorrupt" the save, in case it's already corrupted from before I fixed it
+			}
+
 			file.write(reinterpret_cast<const char*>(&a.enabled), sizeof(bool));
 			file.write(reinterpret_cast<const char*>(&a.levelType), sizeof(short));
 			file.write(reinterpret_cast<const char*>(&a.id), sizeof(int));
 			file.write(reinterpret_cast<const char*>(&a.percentage), sizeof(short));
+
+			if (!file) {
+				log::error("{}", "An error occurred when writing .autodeafen file.");
+				break;
+			}
 		}
 		file.close();
 		log::debug("Successfully saved .autodeafen file.");
@@ -167,9 +177,15 @@ void saveLevel(AutoDeafenLevel lvl) {
 	short const& defaultPercentage = static_cast<short>(Mod::get()->getSettingValue<int64_t>("Default Percentage") & 0xFFFF);
 	// log::info("Saving level {} with enabled: {}, percentage: {}", lvl.id, lvl.enabled, lvl.percentage);
 	// log::info("Default values are enabled: {}, percentage: {}", enabledByDefault, defaultPercentage);
-	if ( !(lvl.enabled == enabledByDefault && lvl.percentage == defaultPercentage) ) // Don't bother wasting file size if it's the default already
+	if ( 
+		!(lvl.enabled == enabledByDefault && lvl.percentage == defaultPercentage) // Don't bother wasting file size if it's the default already
+		&& lvl.percentage <= 100 // This should never happen, so if it does, it shouldn't be on the list!
+		&& lvl.levelType <= 3
+		&& lvl.id >= 0
+	)
+	 
 		loadedAutoDeafenLevels.push_back(lvl);
-	if (Mod::get()->getSettingValue<bool>("Logging")) { runEmptyDebugs(); }
+	if (Mod::get()->getSettingValue<bool>("Additional Debugging")) { runEmptyDebugs(); }
 	// Level saving is now done on exit because it's much faster. Might also make a feature where it starts removing really old levels past a certain limit (like 1000 or something)
 }
 
@@ -224,12 +240,14 @@ class $modify(PlayerObject) {
 			if (auto level = playLayer->m_level) {
 				if (playLayer->m_player1 != nullptr &&
 						this == (playLayer->m_player1) &&
-						!(level->isPlatformer()) &&
-						!(playLayer->m_isPracticeMode)
+						!(level->isPlatformer())
 					) {
-						if (hasDeafenedThisAttempt && !hasDied) {
-							hasDied = true;
-							triggerDeafenKeybind();
+						// log::info("{} | {}", playLayer->m_isPracticeMode, Mod::get()->getSettingValue<bool>("Enabled in Practice Mode"));
+						if (!playLayer->m_isPracticeMode || (playLayer->m_isPracticeMode && Mod::get()->getSettingValue<bool>("Enabled in Practice Mode")) ) {
+							if (hasDeafenedThisAttempt && !hasDied) {
+								hasDied = true;
+								triggerDeafenKeybind();
+							}
 						}
 					}
 				}
@@ -239,10 +257,10 @@ class $modify(PlayerObject) {
 	}
 };
 
-class $modify(GameManager) {
-	void encodeDataTo(DS_Dictionary* p0) {
+class $modify(GManager) {
+	void save() {
+		GManager::save();
 		saveFile();
-		GameManager::encodeDataTo(p0);
 	}
 };
 
@@ -270,7 +288,7 @@ class $modify(PlayLayer) {
 	
 	void postUpdate(float p0) {
 		PlayLayer::postUpdate(p0);
-		if (this->m_isPracticeMode) { return; }
+		if (this->m_isPracticeMode && !Mod::get()->getSettingValue<bool>("Enabled in Practice Mode")) { return; }
 
 		int percent = PlayLayer::getCurrentPercentInt();
 		// log::info("{}", currentlyLoadedLevel.percentage);

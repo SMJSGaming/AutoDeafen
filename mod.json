@@ -1,5 +1,5 @@
 {
-  "geode": "3.0.0-beta.1",
+  "geode": "3.0.0-beta.2",
   "gd": {
     "win": "2.206"
   },
@@ -27,10 +27,15 @@
 	  "max": 100,
 		"description": "The <co>default percentage to deafen at</c> when you load into a level for the first time."
 	},
-	"Logging": {
+	"Enabled in Practice Mode": {
+		"type": "bool",
+		"default": false,
+		"description": "Whether AutoDeafen should be enabled during practice mode. Dunno why you'd ever want this, but it's there if you do."
+	},
+	"Additional Debugging": {
 	  "type": "bool",
 	  "default": false,
-		"description": "Whether you want additional logging when exiting a level."
+		"description": "Whether you want additional logging (for debugging) when exiting a level. Unless you're a developer, you probably want this off, since it can cause performance issues when you exit a level."
 	}
   },
   "dependencies": [
