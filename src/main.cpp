@@ -59,6 +59,12 @@ short getLevelType(GJGameLevel* level) {
 
 void runEmptyDebugs() {
 	log::info("{}", "Running debugs");
+
+	log::info("Deafen Keybind: ", "");
+	for (uint32_t key : deafenKeybind) {
+		log::info("Key: {}", key);
+	}
+
 	log::info("{}", "Loaded levels are:");
 	for (AutoDeafenLevel level : loadedAutoDeafenLevels) {
 		log::info("Id {} of type {} with enabled {} and percentage {}", level.id, level.levelType, level.enabled, level.percentage);
@@ -201,6 +207,12 @@ void sendKeyEvent(uint32_t key, int state) {
 }
 
 void triggerDeafenKeybind() {
+
+	if (deafenKeybind.size() == 0) {
+		log::info("Tried to trigger deafen keybind, but keybind wasn't there. Whoops!");
+		return;
+	}
+
 	if (currentlyLoadedLevel.enabled) {
 		log::info("Triggered deafen keybind.");
 
@@ -348,12 +360,16 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 		virtual void keyDown(cocos2d::enumKeyCodes key) {
 			
 			if (alreadyUsed) return;
+			if (key + 1 > 0xA0) return;
+			log::debug("Key: {}", key + 0);
 
 			vector<uint32_t> keys = {}; // Max 4 keys
 
 			for (uint32_t i = 0; i < 6; i++)
-				if (GetKeyState(160 + i) < 0 && keys.size() < 3) 
+				if (GetKeyState(160 + i) < 0 && keys.size() < 3) {
 					keys.push_back(160 + i);
+					log::debug("Mod key {} is pressed", 160 + i);
+				}
 			keys.push_back(key);
 
 			std::string str = "";
