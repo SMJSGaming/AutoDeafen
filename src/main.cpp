@@ -408,12 +408,12 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			currentlyInMenu = true;
 
 			auto winSize = cocos2d::CCDirector::sharedDirector()->getWinSize();
-			CCPoint topLeftCorner = winSize/2.f-ccp(m_size.width/2.f,-m_size.height/2.f);
+			CCPoint topMiddle = ccp(m_size.width/2.0f, m_size.height);//winSize/2.f-ccp(m_size.width/2.f,-m_size.height/2.f);
 
 			primaryLabel = CCLabelBMFont::create("Edit Keybind", "goldFont.fnt");
 			primaryLabel->setAnchorPoint({0.5, 0.5});
 			primaryLabel->setScale(1.0f);
-			primaryLabel->setPosition(topLeftCorner + ccp(142, -20)); // 80 = center
+			primaryLabel->setPosition(topMiddle); // 80 = center
 
 			std::string str = "";
 			for (const uint32_t key : deafenKeybind)
@@ -422,12 +422,12 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			secondaryLabel = CCLabelBMFont::create("Press your deafen keybind...", "bigFont.fnt"); 
 			secondaryLabel->setAnchorPoint({0.5, 0.5});
 			secondaryLabel->setScale(0.5f);
-			secondaryLabel->setPosition(topLeftCorner + ccp(150, -100));
+			secondaryLabel->setPosition(topMiddle + ccp(0, -100));
 
 			confirmationLabel = CCLabelBMFont::create("", "goldFont.fnt"); 
 			confirmationLabel->setAnchorPoint({0.5, 0.5});
 			confirmationLabel->setScale(0.5f);
-			confirmationLabel->setPosition(topLeftCorner + ccp(150, -150));
+			confirmationLabel->setPosition(topMiddle + ccp(0, -150));
 
 			m_mainLayer -> addChild(primaryLabel);
 			m_mainLayer -> addChild(secondaryLabel);
@@ -441,7 +441,7 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 		}
 		static EditKeybindLayer* create() {
 			auto ret = new EditKeybindLayer();
-			if (ret && ret->init(300, 200, "", "GJ_square02.png")) {
+			if (ret && ret->initAnchored(300, 200, "", "GJ_square02.png")) {
 				ret->autorelease();
 				return ret;
 			}
@@ -500,8 +500,8 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 
 			auto winSize = cocos2d::CCDirector::sharedDirector()->getWinSize();
 
-			CCPoint topLeftCorner = winSize/2.f-ccp(m_size.width/2.f,-m_size.height/2.f);
-			CCPoint topMiddle = ccp(winSize.width/2.0f, winSize.height/2.0f + m_size.height/2.f);
+			CCPoint topLeftCorner = ccp(0, m_size.height);//winSize/2.f - ccp(m_size.width/2.f,-m_size.height/2.f);
+			CCPoint topMiddle = ccp(m_size.width/2.f, m_size.height);
 
 			auto topLabel = CCLabelBMFont::create("AutoDeafen", "goldFont.fnt"); 
 			topLabel->setAnchorPoint({0.5, 0.5});
@@ -601,7 +601,7 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 		
 		static ConfigLayer* create() {
 			auto ret = new ConfigLayer();
-			if (ret && ret->init(300, 200, "", "GJ_square02.png")) {
+			if (ret && ret->initAnchored(300, 200, "", "GJ_square02.png")) {
 				ret->autorelease();
 				return ret;
 			}
