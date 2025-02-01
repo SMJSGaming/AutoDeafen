@@ -4,7 +4,7 @@
     "win": "2.2074"
   },
   "name": "AutoDeafen",
-  "version": "v1.2.1",
+  "version": "v1.2.2",
   "developer": "Lynxdeer",
   "id": "lynxdeer.autodeafen",
   "description": "A mod that automatically hits a configurable deafen keybind when you reach a certain percentage. Configurable per-level.",
