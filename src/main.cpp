@@ -1,13 +1,11 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <cstring>
 #include <vector>
 
 #include <stdio.h>
 #include <locale>
 #include <codecvt>
-#include <string.h>
 #include <windows.h>
 #include <WinUser.h>
 
@@ -26,28 +24,22 @@
 #include <Geode/ui/TextInput.hpp>
 
 using namespace geode::prelude;
-using namespace std;
 
 struct AutoDeafenLevel {
 	bool enabled = false;
 	short levelType; // 0 = Normal, 1 = Local/Editor, 2 = Daily/Weekly, 3 = gauntlet
 	int id = 0;
 	short percentage = 50;
-	AutoDeafenLevel(bool a, short b, int c, short d) { // I am lazy lmao
-		enabled = a;
-		levelType = b;
-		id = c;
-		percentage = d;
-	}
-	AutoDeafenLevel() {}
+    AutoDeafenLevel(bool a, short b, int c, short d) : enabled(a), levelType(b), id(c), percentage(d) {}
+    AutoDeafenLevel() = default;
 };
 
 AutoDeafenLevel currentlyLoadedLevel;
-vector<AutoDeafenLevel> loadedAutoDeafenLevels;
+std::vector<AutoDeafenLevel> loadedAutoDeafenLevels;
 
 bool hasDeafenedThisAttempt = false;
 bool hasDied = false;
-vector<uint32_t> deafenKeybind = {};
+std::vector<uint32_t> deafenKeybind = {};
 
 short getLevelType(GJGameLevel* level) {
 	if (level -> m_levelType != GJLevelType::Saved) return 1;
@@ -79,7 +71,7 @@ void saveFile() {
 
 	log::info("{}", "Saving .autodeafen file to " + path.string());
 
-	ofstream file(path);
+	std::ofstream file(path);
 	if (file.is_open()) {
 		file.write("ad1", sizeof("ad1")); // File Header - autodeafen file version 1
 
@@ -87,7 +79,7 @@ void saveFile() {
 
 		std::string keycodes = "";
 		for (const uint32_t key : deafenKeybind)
-			keycodes = keycodes + to_string(key) + ", ";
+			keycodes = keycodes + std::to_string(key) + ", ";
 		keycodes.pop_back();keycodes.pop_back();
 
 		// log::info("{}{}", "Keys: ", keycodes);
@@ -128,7 +120,7 @@ void loadFile() {
 
 	log::info("{}", "Loading .autodeafen file from " + path.string());
 
-	ifstream file(path, std::ios::binary);
+	std::ifstream file(path, std::ios::binary);
 	if (file.is_open()) {
 
 		char header[4]; // Why on earth is the length of "ad1" 4??? wtf c++
@@ -341,12 +333,6 @@ std::wstring KeyNameFromVirtualKeyCode(const unsigned virtualKeyCode){
 	return KeyNameFromScanCode(MapVirtualKeyW(virtualKeyCode, MAPVK_VK_TO_VSC));
 }
 
-// Shamelessly copied from chatgpt (i am lazy)
-std::string wstring_to_string(const std::wstring& wstr) {
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-	return converter.to_bytes(wstr);
-}
-
 bool currentlyInMenu = false;
 
 class EditKeybindLayer : public geode::Popup<std::string const&> {
@@ -363,7 +349,7 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			if (key + 1 > 0xA0) return;
 			log::debug("Key: {}", key + 0);
 
-			vector<uint32_t> keys = {}; // Max 4 keys
+			std::vector<uint32_t> keys = {}; // Max 4 keys
 
 			for (uint32_t i = 0; i < 6; i++)
 				if (GetKeyState(160 + i) < 0 && keys.size() < 3) {
@@ -376,8 +362,8 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 			std::string keycodes = "";
 
 			for (const uint32_t key : keys) {
-				str = str + wstring_to_string(KeyNameFromVirtualKeyCode(key)) + " + ";
-				keycodes = keycodes + to_string(key) + ", ";
+				str = str + geode::utils::string::wideToUtf8(KeyNameFromVirtualKeyCode(key)) + " + ";
+				keycodes = keycodes + std::to_string(key) + ", ";
 			}
 			str.pop_back();str.pop_back();str.pop_back();
 			keycodes.pop_back();keycodes.pop_back();
@@ -417,7 +403,7 @@ class EditKeybindLayer : public geode::Popup<std::string const&> {
 
 			std::string str = "";
 			for (const uint32_t key : deafenKeybind)
-				str = str + wstring_to_string(KeyNameFromVirtualKeyCode(key)) + " + ";
+				str = str + geode::utils::string::wideToUtf8(KeyNameFromVirtualKeyCode(key)) + " + ";
 
 			secondaryLabel = CCLabelBMFont::create("Press your deafen keybind...", "bigFont.fnt"); 
 			secondaryLabel->setAnchorPoint({0.5, 0.5});
@@ -537,7 +523,7 @@ class ConfigLayer : public geode::Popup<std::string const&> {
 				percentageInput -> setScale(0.85f);
 				percentageInput -> setMaxCharCount(2);
 				percentageInput -> setEnabled(true);
-				percentageInput -> setString(to_string(currentlyLoadedLevel.percentage));
+				percentageInput -> setString(std::to_string(currentlyLoadedLevel.percentage));
 
 				percentageLabel = CCLabelBMFont::create("Percent", "bigFont.fnt"); 
 				percentageLabel->setAnchorPoint({0, 0.5});
